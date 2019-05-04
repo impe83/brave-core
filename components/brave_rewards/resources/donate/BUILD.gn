@@ -10,6 +10,7 @@ transpile_web_ui("donate") {
     "components/donateToTwitterUser.tsx",
     "components/siteBanner.tsx",
     "components/transientDonationOverlay.tsx",
+    "components/tweetBox.tsx",
     "constants/donate_types.ts",
     "reducers/donate_reducer.ts",
     "reducers/index.ts",
