@@ -21,8 +21,6 @@
 #include "components/update_client/update_client_errors.h"
 #include "components/update_client/utils.h"
 #include "crypto/sha2.h"
-#include "extensions/common/constants.h"
-#include "extensions/common/manifest_constants.h"
 
 namespace {
 using Result = update_client::CrxInstaller::Result;
@@ -38,8 +36,9 @@ bool RewriteManifestFile(
   // Add the public key
   DCHECK(!public_key.empty());
 
+FILE_PATH_LITERAL()
   std::unique_ptr<base::DictionaryValue> final_manifest(manifest.DeepCopy());
-  final_manifest->SetString(extensions::manifest_keys::kPublicKey, public_key);
+  final_manifest->SetString("key", public_key);
 
   std::string manifest_json;
   JSONStringValueSerializer serializer(&manifest_json);
@@ -49,7 +48,7 @@ bool RewriteManifestFile(
   }
 
   base::FilePath manifest_path =
-    extension_root.Append(extensions::kManifestFilename);
+    extension_root.Append(FILE_PATH_LITERAL("manifest.json"));
   int size = base::checked_cast<int>(manifest_json.size());
   if (base::WriteFile(manifest_path, manifest_json.data(), size) != size) {
     return false;
@@ -60,7 +59,7 @@ bool RewriteManifestFile(
 std::string GetManifestString(const base::DictionaryValue& manifest,
     const std::string &public_key) {
   std::unique_ptr<base::DictionaryValue> final_manifest(manifest.DeepCopy());
-  final_manifest->SetString(extensions::manifest_keys::kPublicKey, public_key);
+  final_manifest->SetString("key", public_key);
 
   std::string manifest_json;
   JSONStringValueSerializer serializer(&manifest_json);
