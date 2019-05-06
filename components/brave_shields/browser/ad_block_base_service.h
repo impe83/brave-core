@@ -22,6 +22,10 @@
 class AdBlockClient;
 class AdBlockServiceTest;
 
+namespace adblock {
+class Blocker;
+}
+
 namespace brave_shields {
 
 // The base class of the brave shields service in charge of ad-block
@@ -47,6 +51,7 @@ class AdBlockBaseService : public BaseBraveShieldsService {
 
   SEQUENCE_CHECKER(sequence_checker_);
   std::unique_ptr<AdBlockClient> ad_block_client_;
+  std::unique_ptr<adblock::Blocker> ad_block_client2_;
   DATFileDataBuffer buffer_;
 
  private:

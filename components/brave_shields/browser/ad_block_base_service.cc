@@ -22,6 +22,7 @@
 #include "brave/components/brave_shields/browser/dat_file_util.h"
 #include "brave/components/brave_shields/common/brave_shield_constants.h"
 #include "brave/vendor/ad-block/ad_block_client.h"
+#include "brave/vendor/adblock_rust_ffi/src/wrapper.hpp"
 #include "chrome/browser/profiles/profile_manager.h"
 #include "components/prefs/pref_service.h"
 #include "net/base/registry_controlled_domains/registry_controlled_domain.h"
@@ -30,6 +31,73 @@
 using namespace net::registry_controlled_domains;  // NOLINT
 
 namespace {
+
+std::string ResourceTypeToString(content::ResourceType resource_type) {
+  std::string filter_option = "";
+  switch (resource_type) {
+    // top level page
+    case content::RESOURCE_TYPE_MAIN_FRAME:
+      filter_option = "main_frame";
+      break;
+    // frame or iframe
+    case content::RESOURCE_TYPE_SUB_FRAME:
+      filter_option = "sub_frame";
+      break;
+    // a CSS stylesheet
+    case content::RESOURCE_TYPE_STYLESHEET:
+      filter_option = "stylesheet";
+      break;
+    // an external script
+    case content::RESOURCE_TYPE_SCRIPT:
+      filter_option = "script";
+      break;
+    // an image (jpg/gif/png/etc)
+    case content::RESOURCE_TYPE_FAVICON:
+    case content::RESOURCE_TYPE_IMAGE:
+      filter_option = "image";
+      break;
+    // a font
+    case content::RESOURCE_TYPE_FONT_RESOURCE:
+      filter_option = "font";
+      break;
+    // an "other" subresource.
+    case content::RESOURCE_TYPE_SUB_RESOURCE:
+      filter_option = "other";
+      break;
+    // an object (or embed) tag for a plugin.
+    case content::RESOURCE_TYPE_OBJECT:
+      filter_option = "object";
+      break;
+    // a media resource.
+    case content::RESOURCE_TYPE_MEDIA:
+      filter_option = "media";
+      break;
+    // a XMLHttpRequest
+    case content::RESOURCE_TYPE_XHR:
+      filter_option = "xhr";
+      break;
+    // a ping request for <a ping>/sendBeacon.
+    case content::RESOURCE_TYPE_PING:
+      filter_option = "ping";
+      break;
+    // the main resource of a dedicated
+    case content::RESOURCE_TYPE_WORKER:
+    // the main resource of a shared worker.
+    case content::RESOURCE_TYPE_SHARED_WORKER:
+    // an explicitly requested prefetch
+    case content::RESOURCE_TYPE_PREFETCH:
+    // the main resource of a service worker.
+    case content::RESOURCE_TYPE_SERVICE_WORKER:
+    // a report of Content Security Policy
+    case content::RESOURCE_TYPE_CSP_REPORT:
+    // a resource that a plugin requested.
+    case content::RESOURCE_TYPE_PLUGIN_RESOURCE:
+    case content::RESOURCE_TYPE_LAST_TYPE:
+    default:
+      break;
+  }
+  return filter_option;
+}
 
 FilterOption ResourceTypeToFilterOption(content::ResourceType resource_type) {
   FilterOption filter_option = FONoFilterOption;
@@ -105,6 +173,7 @@ namespace brave_shields {
 AdBlockBaseService::AdBlockBaseService()
     : BaseBraveShieldsService(),
       ad_block_client_(new AdBlockClient()),
+      ad_block_client2_(new adblock::Blocker("||brianbondy.com")),
       weak_factory_(this) {
   DETACH_FROM_SEQUENCE(sequence_checker_);
 }
@@ -126,8 +195,9 @@ bool AdBlockBaseService::ShouldStartRequest(const GURL& url,
   // Determine third-party here so the library doesn't need to figure it out.
   // CreateFromNormalizedTuple is needed because SameDomainOrHost needs
   // a URL or origin and not a string to a host name.
-  if (SameDomainOrHost(url, url::Origin::CreateFromNormalizedTuple(
-        "https", tab_host.c_str(), 80), INCLUDE_PRIVATE_REGISTRIES)) {
+  url::Origin tab_origin(url::Origin::CreateFromNormalizedTuple(
+        "https", tab_host.c_str(), 80));
+  if (SameDomainOrHost(url, tab_origin, INCLUDE_PRIVATE_REGISTRIES)) {
     current_option = static_cast<FilterOption>(
         current_option | FONotThirdParty);
   } else {
@@ -136,6 +206,10 @@ bool AdBlockBaseService::ShouldStartRequest(const GURL& url,
 
   Filter* matching_filter = nullptr;
   Filter* matching_exception_filter = nullptr;
+  if (ad_block_client2_->Matches(url.spec(),
+        tab_origin.GetURL().spec(), ResourceTypeToString(resource_type))) {
+    return false;
+  }
   if (ad_block_client_->matches(url.spec().c_str(),
         current_option, tab_host.c_str(), &matching_filter,
         &matching_exception_filter)) {
