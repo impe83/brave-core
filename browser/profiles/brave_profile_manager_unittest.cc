@@ -23,6 +23,7 @@
 #include "chrome/test/base/test_browser_window.h"
 #include "chrome/test/base/testing_browser_process.h"
 #include "chrome/test/base/testing_profile.h"
+#include "components/safe_browsing/common/safe_browsing_prefs.h"
 #include "content/public/common/webrtc_ip_handling_policy.h"
 #include "content/public/test/test_browser_thread_bundle.h"
 #include "content/public/test/test_utils.h"
@@ -140,6 +141,9 @@ TEST_F(BraveProfileManagerTest, InitProfileUserPrefs) {
   EXPECT_EQ(
     profile->GetPrefs()->GetString(prefs::kWebRTCIPHandlingPolicy),
     content::kWebRTCIPHandlingDisableNonProxiedUdp);
+
+  // Check SafeBrowsing status
+  EXPECT_FALSE(profile->GetPrefs()->GetBoolean(prefs::kSafeBrowsingEnabled));
 }
 
 // This is for tor guest window, remove it when we have persistent tor profiles
