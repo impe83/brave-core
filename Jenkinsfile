@@ -12,8 +12,8 @@ pipeline {
         booleanParam(name: "WIPE_WORKSPACE", defaultValue: false, description: "")
         booleanParam(name: "RUN_INIT", defaultValue: false, description: "")
         booleanParam(name: "DISABLE_SCCACHE", defaultValue: false, description: "")
-        booleanParam(name: "BUILD_LINUX", defaultValue: true, description: "")
-        booleanParam(name: "BUILD_MAC", defaultValue: true, description: "")
+        booleanParam(name: "BUILD_LINUX", defaultValue: false, description: "")
+        booleanParam(name: "BUILD_MAC", defaultValue: false, description: "")
         booleanParam(name: "BUILD_WINDOWS_X64", defaultValue: true, description: "")
         booleanParam(name: "BUILD_WINDOWS_IA32", defaultValue: false, description: "")
         booleanParam(name: "DEBUG", defaultValue: false, description: "")
@@ -95,13 +95,6 @@ pipeline {
 
                     cd brave-browser
                     git checkout -b ${BRANCH_TO_BUILD}
-
-                    echo "Pinning brave-core to branch ${BRANCH_TO_BUILD}..."
-                    jq "del(.config.projects[\\"brave-core\\"].branch) | .config.projects[\\"brave-core\\"].branch=\\"${BRANCH_TO_BUILD}\\"" package.json > package.json.new
-                    mv package.json.new package.json
-
-                    echo "Committing..."
-                    git commit --all --message "pin brave-core to branch ${BRANCH_TO_BUILD}"
 
                     echo "Pushing branch ..."
                     git push ${BB_REPO}
