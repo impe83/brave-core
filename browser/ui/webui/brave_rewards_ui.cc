@@ -121,6 +121,8 @@ class RewardsDOMHandler : public WebUIMessageHandler,
   void OnGetOneTimeTips(
     std::unique_ptr<brave_rewards::ContentSiteList> list);
 
+  void SetInlineTipSetting(const base::ListValue* args);
+
   // RewardsServiceObserver implementation
   void OnWalletInitialized(brave_rewards::RewardsService* rewards_service,
                        uint32_t result) override;
@@ -297,6 +299,9 @@ void RewardsDOMHandler::RegisterMessages() {
       base::Unretained(this)));
   web_ui()->RegisterMessageCallback("brave_rewards.getExcludedPublishersNumber",
       base::BindRepeating(&RewardsDOMHandler::GetExcludedPublishersNumber,
+      base::Unretained(this)));
+  web_ui()->RegisterMessageCallback("brave_rewards.setInlineTipSetting",
+      base::BindRepeating(&RewardsDOMHandler::SetInlineTipSetting,
       base::Unretained(this)));
 }
 
@@ -1083,6 +1088,18 @@ void RewardsDOMHandler::OnContributionSaved(
 
   web_ui()->CallJavascriptFunctionUnsafe(
       "brave_rewards.onContributionSaved", result);
+}
+
+void RewardsDOMHandler::SetInlineTipSetting(const base::ListValue* args) {
+  std::string key;
+  args->GetString(0, &key);
+
+  std::string value;
+  args->GetString(1, &value);
+
+  if (rewards_service_) {
+    rewards_service_->SetInlineTipSetting(key, value == "true");
+  }
 }
 
 }  // namespace
